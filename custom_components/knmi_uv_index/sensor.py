@@ -106,6 +106,34 @@ CURRENT_SENSOR = KnmiUvSensorDescription(
 )
 
 
+def _now_attrs(data: UvData) -> dict[str, Any]:
+    return {
+        "clear_sky_uv_index": data.current_uv_clear,
+        "time": data.current_uv_time.isoformat() if data.current_uv_time else None,
+        "source": "Open-Meteo",
+        "hourly": [
+            {
+                "time": point.time.isoformat(),
+                "uv_index": point.uv,
+                "uv_index_clear_sky": point.uv_clear,
+            }
+            for point in data.hourly
+        ],
+    }
+
+
+NOW_SENSOR = KnmiUvSensorDescription(
+    key="uv_now",
+    name="Now",
+    icon="mdi:weather-sunny",
+    native_unit_of_measurement=UV_INDEX,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=1,
+    value_fn=lambda data: data.current_uv,
+    attrs_fn=_now_attrs,
+)
+
+
 def _day_attrs(data: UvData, index: int) -> dict[str, Any]:
     if index >= len(data.days):
         return {}
@@ -140,7 +168,10 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     num_days = len(coordinator.data.days) if coordinator.data else 0
 
-    entities: list[KnmiUvSensor] = [KnmiUvSensor(coordinator, CURRENT_SENSOR)]
+    entities: list[KnmiUvSensor] = [
+        KnmiUvSensor(coordinator, CURRENT_SENSOR),
+        KnmiUvSensor(coordinator, NOW_SENSOR),
+    ]
     entities.extend(KnmiUvSensor(coordinator, _make_day_sensor(i)) for i in range(num_days))
     async_add_entities(entities)
 

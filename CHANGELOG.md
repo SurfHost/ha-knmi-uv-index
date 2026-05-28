@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] - 2026-05-28
+
+### Added
+- Live "UV index now" sensor for your Home Assistant location, using the free Open-Meteo air-quality API (no API key needed). It updates through the day and is recorded, so you get an actual UV history graph.
+- The current sensor exposes an `hourly` attribute (today + tomorrow) for an intraday UV curve.
+
+### Notes
+- KNMI remains the source for the official national daily forecast; Open-Meteo provides the location-specific live/hourly value (CAMS model data, not a ground measurement — no measured UV is published as data for the Netherlands).
+
 ## [0.1.2] - 2026-05-28
 
 ### Changed

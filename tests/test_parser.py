@@ -11,7 +11,7 @@ import importlib.util
 import pathlib
 import sys
 import types
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
@@ -40,6 +40,7 @@ _load("models", "models.py")
 _parser = _load("parser", "parser.py")
 
 parse_uv_xml = _parser.parse_uv_xml
+parse_open_meteo = _parser.parse_open_meteo
 select_today = _parser.select_today
 UvParseError = _parser.UvParseError
 
@@ -119,3 +120,31 @@ def test_missing_cloudy_value_is_none() -> None:
 def test_invalid_xml_raises() -> None:
     with pytest.raises(UvParseError):
         parse_uv_xml(b"<report><not-closed>")
+
+
+def test_parse_open_meteo() -> None:
+    payload = {
+        "current": {"time": "2026-05-28T14:00", "uv_index": 6.2, "uv_index_clear_sky": 6.25},
+        "hourly": {
+            "time": ["2026-05-28T12:00", "2026-05-28T13:00", "2026-05-28T14:00"],
+            "uv_index": [5.6, 6.25, 6.2],
+            "uv_index_clear_sky": [5.7, 6.3, 6.25],
+        },
+    }
+    current_uv, current_clear, current_time, hourly = parse_open_meteo(payload)
+
+    assert current_uv == 6.2
+    assert current_clear == 6.25
+    assert current_time == datetime(2026, 5, 28, 14, 0)
+    assert len(hourly) == 3
+    assert hourly[0].time == datetime(2026, 5, 28, 12, 0)
+    assert hourly[1].uv == 6.25
+    assert hourly[2].uv_clear == 6.25
+
+
+def test_parse_open_meteo_empty() -> None:
+    current_uv, current_clear, current_time, hourly = parse_open_meteo({})
+    assert current_uv is None
+    assert current_clear is None
+    assert current_time is None
+    assert hourly == []

@@ -11,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import KnmiUvClient
 from .const import CONF_API_KEY, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
 from .coordinator import KnmiUvConfigEntry, KnmiUvCoordinator
+from .open_meteo import OpenMeteoUvClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,9 +22,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: KnmiUvConfigEntry) -> bo
     """Set up KNMI UV Index from a config entry."""
     session = async_get_clientsession(hass)
     client = KnmiUvClient(session, entry.data[CONF_API_KEY])
+    open_meteo = OpenMeteoUvClient(session)
 
     scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-    coordinator = KnmiUvCoordinator(hass, client, scan_interval)
+    coordinator = KnmiUvCoordinator(
+        hass,
+        client,
+        open_meteo,
+        hass.config.latitude,
+        hass.config.longitude,
+        scan_interval,
+    )
 
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator

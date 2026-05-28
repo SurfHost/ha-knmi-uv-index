@@ -9,11 +9,16 @@ KNMI publishes a national UV forecast (`zonkrachtverwachting`) for today and the
 
 ## Features
 
-- Current UV index sensor (today's value for sunny weather)
-- A UV index sensor for each forecast day (today + 8 days)
+- **Live "UV index now"** sensor for your location, updated through the day and recorded, so you get an actual UV history graph
+- Today's UV index and a UV index sensor for each forecast day (today + 8 days)
 - The cloudy-weather UV index exposed as an attribute (`uv_cloudy`)
-- The full multi-day forecast available as an attribute on the main sensor
+- The full multi-day forecast and today's hourly curve available as attributes
 - Lightweight: pure-Python, no extra dependencies
+
+## Data sources
+
+- **KNMI Data Platform** (`uv-index`) — the official national daily UV forecast for the Netherlands (`zonkrachtverwachting`). Requires a free API key.
+- **[Open-Meteo](https://open-meteo.com/)** air-quality API — the live, hourly, location-specific UV index for your Home Assistant home location. Free, **no API key**, CAMS model data. (No ground-measured UV is published as data for the Netherlands, so this model value is used for the live reading.)
 
 ## Requirements
 
@@ -60,13 +65,33 @@ The forecast is national (the Netherlands), so no location needs to be chosen an
 
 ## Sensors
 
-### UV index
-- **State**: Today's UV index for sunny weather
-- **Attributes**: `uv_cloudy` (today's cloudy value), `date`, `issued`, `source_file`, and `forecast` (the full list of `{date, uv_sunny, uv_cloudy}` for all days)
+### UV index now (`sensor.knmi_uv_index_now`)
+- **State**: The live UV index for your location right now (Open-Meteo)
+- Recorded by Home Assistant, so its history can be graphed directly
+- **Attributes**: `clear_sky_uv_index`, `time`, `source`, and `hourly` (today + tomorrow as `{time, uv_index, uv_index_clear_sky}`)
 
-### UV index — Today / Tomorrow / +N days (one per forecast day)
-- **State**: That day's UV index for sunny weather
-- **Attributes**: `date`, `uv_cloudy`, `description`
+### UV index (`sensor.knmi_uv_index`)
+- **State**: Today's UV index for sunny weather (KNMI national forecast)
+- **Attributes**: `uv_cloudy`, `date`, `weekday`, `issued`, `source_file`, and `forecast` (all days as `{date, weekday, uv_sunny, uv_cloudy}`)
+
+### Forecast day sensors (one per day)
+- **State**: That day's UV index for sunny weather (KNMI)
+- **Name**: "Today", "Tomorrow", then the weekday + date (e.g. "Saturday 30 May")
+- **Attributes**: `date`, `weekday`, `uv_cloudy`, `description`
+
+## Graphs
+
+Plot the live UV history with a standard History card on `sensor.knmi_uv_index_now`. For an intraday curve or the multi-day forecast, the [apexcharts-card](https://github.com/RomRider/apexcharts-card) can read the attributes, e.g. today's hourly curve:
+
+```yaml
+type: custom:apexcharts-card
+header: { show: true, title: UV index today }
+series:
+  - entity: sensor.knmi_uv_index_now
+    name: UV index
+    data_generator: |
+      return entity.attributes.hourly.map(p => [new Date(p.time).getTime(), p.uv_index]);
+```
 
 ## Data source
 

@@ -23,3 +23,7 @@ class KnmiApiError(KnmiUvError):
 
 class KnmiDataError(KnmiUvError):
     """Raised when the downloaded data cannot be parsed."""
+
+
+class OpenMeteoError(KnmiUvError):
+    """Raised when the Open-Meteo UV request fails."""

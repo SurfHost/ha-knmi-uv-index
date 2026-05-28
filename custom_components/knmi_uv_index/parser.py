@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
+from typing import Any
 from xml.etree import ElementTree
 
-from .models import UvData, UvDayForecast
+from .models import UvData, UvDayForecast, UvHourPoint
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +54,15 @@ def _to_float(value: str | None) -> float | None:
     try:
         return float(value)
     except ValueError:
+        return None
+
+
+def _to_float_any(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
         return None
 
 
@@ -122,3 +132,29 @@ def select_today(data: UvData, today: date) -> UvDayForecast | None:
         if day.day == today:
             return day
     return data.days[0] if data.days else None
+
+
+def parse_open_meteo(
+    payload: dict[str, Any],
+) -> tuple[float | None, float | None, datetime | None, list[UvHourPoint]]:
+    """Parse an Open-Meteo air-quality response into (uv, uv_clear, time, hourly)."""
+    current = payload.get("current") or {}
+    current_uv = _to_float_any(current.get("uv_index"))
+    current_clear = _to_float_any(current.get("uv_index_clear_sky"))
+    current_time = _parse_datetime(current.get("time"))
+
+    hourly = payload.get("hourly") or {}
+    times = hourly.get("time") or []
+    uv_values = hourly.get("uv_index") or []
+    clear_values = hourly.get("uv_index_clear_sky") or []
+
+    points: list[UvHourPoint] = []
+    for index, raw_time in enumerate(times):
+        timestamp = _parse_datetime(raw_time)
+        if timestamp is None:
+            continue
+        uv = _to_float_any(uv_values[index]) if index < len(uv_values) else None
+        clear = _to_float_any(clear_values[index]) if index < len(clear_values) else None
+        points.append(UvHourPoint(time=timestamp, uv=uv, uv_clear=clear))
+
+    return current_uv, current_clear, current_time, points
