@@ -1,13 +1,12 @@
 [project]
 name = "ha-knmi-uv-index"
-version = "0.1.0"
+version = "0.1.1"
 description = "KNMI UV index for Home Assistant using the KNMI Data Platform Open Data API"
 requires-python = ">=3.13"
 license = "MIT"
 
 dependencies = [
     "homeassistant>=2026.4.0",
-    "netCDF4>=1.7",
 ]
 
 [project.optional-dependencies]

@@ -16,7 +16,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import DEFAULT_MAX_DAYS
 from .coordinator import KnmiUvConfigEntry
 from .entity import KnmiUvEntity
 from .models import UvData
@@ -30,50 +29,61 @@ class KnmiUvSensorDescription(SensorEntityDescription):
     attrs_fn: Callable[[UvData], dict[str, Any]] | None = None
 
 
-def _current_attrs(data: UvData) -> dict[str, Any]:
-    """Return attributes for the current UV index sensor."""
+def _forecast_list(data: UvData) -> list[dict[str, Any]]:
+    return [
+        {"date": day.day.isoformat(), "uv_sunny": day.uv_sunny, "uv_cloudy": day.uv_cloudy}
+        for day in data.days
+    ]
+
+
+def _today_attrs(data: UvData) -> dict[str, Any]:
+    today = data.today
     return {
-        "forecast_time": data.current_time.isoformat() if data.current_time else None,
-        "clear_sky_uv_index": data.current_clear,
-        "grid_latitude": data.grid_latitude,
-        "grid_longitude": data.grid_longitude,
+        "uv_cloudy": today.uv_cloudy if today else None,
+        "date": today.day.isoformat() if today else None,
+        "issued": data.issued.isoformat() if data.issued else None,
         "source_file": data.source_file,
+        "forecast": _forecast_list(data),
     }
 
 
 CURRENT_SENSOR = KnmiUvSensorDescription(
     key="uv_current",
-    name="UV index",
+    name=None,
     icon="mdi:weather-sunny-alert",
     native_unit_of_measurement=UV_INDEX,
     state_class=SensorStateClass.MEASUREMENT,
     suggested_display_precision=1,
-    value_fn=lambda data: data.current,
-    attrs_fn=_current_attrs,
+    value_fn=lambda data: data.today.uv_sunny if data.today else None,
+    attrs_fn=_today_attrs,
 )
 
 
-def _day_name(day_offset: int) -> str:
-    """Human-readable name for a per-day maximum sensor."""
-    if day_offset == 0:
-        return "Max today"
-    if day_offset == 1:
-        return "Max tomorrow"
-    return f"Max +{day_offset} days"
+def _day_name(index: int) -> str:
+    if index == 0:
+        return "Today"
+    if index == 1:
+        return "Tomorrow"
+    return f"+{index} days"
 
 
-def _make_day_sensor(day_offset: int) -> KnmiUvSensorDescription:
-    """Create a description for the maximum UV index on a forecast day."""
+def _make_day_sensor(index: int) -> KnmiUvSensorDescription:
     return KnmiUvSensorDescription(
-        key=f"uv_max_day_{day_offset}",
-        name=_day_name(day_offset),
+        key=f"uv_day_{index}",
+        name=_day_name(index),
         icon="mdi:weather-sunny",
         native_unit_of_measurement=UV_INDEX,
         suggested_display_precision=1,
-        value_fn=lambda data, i=day_offset: data.days[i].uv_max if i < len(data.days) else None,
-        attrs_fn=lambda data, i=day_offset: {
-            "date": data.days[i].day.isoformat() if i < len(data.days) else None
-        },
+        value_fn=lambda data, n=index: data.days[n].uv_sunny if n < len(data.days) else None,
+        attrs_fn=lambda data, n=index: (
+            {
+                "date": data.days[n].day.isoformat(),
+                "uv_cloudy": data.days[n].uv_cloudy,
+                "description": data.days[n].description,
+            }
+            if n < len(data.days)
+            else {}
+        ),
     )
 
 
@@ -84,13 +94,10 @@ async def async_setup_entry(
 ) -> None:
     """Set up KNMI UV Index sensors."""
     coordinator = entry.runtime_data
-
-    num_days = 0
-    if coordinator.data is not None:
-        num_days = min(len(coordinator.data.days), DEFAULT_MAX_DAYS)
+    num_days = len(coordinator.data.days) if coordinator.data else 0
 
     entities: list[KnmiUvSensor] = [KnmiUvSensor(coordinator, CURRENT_SENSOR)]
-    entities.extend(KnmiUvSensor(coordinator, _make_day_sensor(n)) for n in range(num_days))
+    entities.extend(KnmiUvSensor(coordinator, _make_day_sensor(i)) for i in range(num_days))
     async_add_entities(entities)
 
 

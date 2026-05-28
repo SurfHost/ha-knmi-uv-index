@@ -3,19 +3,21 @@
 [![Validate](https://github.com/SurfHost/ha-knmi-uv-index/actions/workflows/validate.yml/badge.svg)](https://github.com/SurfHost/ha-knmi-uv-index/actions/workflows/validate.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-A Home Assistant custom integration that shows the **UV index (UV radiation)** for a location in the Netherlands, using the [KNMI Data Platform `uv-index` dataset](https://dataplatform.knmi.nl/dataset/access/uv-index-1-0).
+A Home Assistant custom integration that shows the **UV index (UV radiation / "zonkracht")** forecast for the Netherlands, using the [KNMI Data Platform `uv-index` dataset](https://dataplatform.knmi.nl/dataset/access/uv-index-1-0).
+
+KNMI publishes a national UV forecast (`zonkrachtverwachting`) for today and the next 8 days, with a value for **sunny** weather and for **cloudy** weather.
 
 ## Features
 
-- Current UV index for a chosen location
-- Maximum UV index per forecast day (today, tomorrow, and the following days)
-- Location picked from your existing Home Assistant zones during setup (defaults to Home)
-- Configurable update interval
-- Clear-sky UV index exposed as an attribute (when available in the data)
+- Current UV index sensor (today's value for sunny weather)
+- A UV index sensor for each forecast day (today + 8 days)
+- The cloudy-weather UV index exposed as an attribute (`uv_cloudy`)
+- The full multi-day forecast available as an attribute on the main sensor
+- Lightweight: pure-Python, no extra dependencies
 
 ## Requirements
 
-- Home Assistant 2026.4 or newer, on a **64-bit** system (HAOS/Container on x86-64 or a 64-bit Raspberry Pi). The UV data is in NetCDF format and depends on the `netCDF4` library, which has no wheels for 32-bit armv7.
+- Home Assistant 2026.4 or newer
 - A free KNMI Data Platform API key — **[request one here](https://developer.dataplatform.knmi.nl/register/)** (choose the *Open Data API*).
 
 ## Installation
@@ -47,31 +49,28 @@ Or manually:
 1. Go to **Settings** > **Devices & Services** > **Add Integration**
 2. Search for "KNMI UV Index"
 3. Enter your KNMI Data Platform API key ([request one here](https://developer.dataplatform.knmi.nl/register/))
-4. Choose a location from the dropdown (your Home Assistant zones, default is **Home**)
+
+The forecast is national (the Netherlands), so no location needs to be chosen and only one instance is configured.
 
 ### Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Location | Home | The zone whose coordinates are used to read the UV index |
-| Update interval | 900 | Polling interval in seconds (300-21600) |
-
-You can add the integration multiple times to track several locations.
+| Update interval | 3600 | Polling interval in seconds (900-86400). The forecast is published once per day. |
 
 ## Sensors
 
-### UV Index
-- **State**: Current UV index at the chosen location (0 at night)
-- **Attributes**: `forecast_time`, `clear_sky_uv_index`, `grid_latitude`, `grid_longitude`, `source_file`, `attribution`
+### UV index
+- **State**: Today's UV index for sunny weather
+- **Attributes**: `uv_cloudy` (today's cloudy value), `date`, `issued`, `source_file`, and `forecast` (the full list of `{date, uv_sunny, uv_cloudy}` for all days)
 
-### UV Index Max (per forecast day)
-- **State**: Maximum UV index for that day
-- **Name**: "UV Index Max Today", "UV Index Max Tomorrow", "UV Index Max +2d", …
-- **Attributes**: `date`, `attribution`
+### UV index — Today / Tomorrow / +N days (one per forecast day)
+- **State**: That day's UV index for sunny weather
+- **Attributes**: `date`, `uv_cloudy`, `description`
 
 ## Data source
 
-UV index data is provided by the [KNMI Data Platform](https://dataplatform.knmi.nl/dataset/access/uv-index-1-0) (`uv-index`, version 1.0). The data is published by the Royal Netherlands Meteorological Institute (KNMI). An API key is required and can be requested for free at the [KNMI developer portal](https://developer.dataplatform.knmi.nl/register/).
+UV index data is provided by the [KNMI Data Platform](https://dataplatform.knmi.nl/dataset/access/uv-index-1-0) (`uv-index`, version 1.0) — the national `zonkrachtverwachting` published by the Royal Netherlands Meteorological Institute (KNMI). An API key is required and can be requested for free at the [KNMI developer portal](https://developer.dataplatform.knmi.nl/register/).
 
 ## License
 

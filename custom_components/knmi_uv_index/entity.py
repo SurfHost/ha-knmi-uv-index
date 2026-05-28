@@ -6,7 +6,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTRIBUTION, CONF_LOCATION_NAME, DOMAIN, MANUFACTURER
+from .const import ATTRIBUTION, DOMAIN, MANUFACTURER
 from .coordinator import KnmiUvCoordinator
 
 
@@ -22,11 +22,10 @@ class KnmiUvEntity(CoordinatorEntity[KnmiUvCoordinator]):
         self.entity_description = description
         entry = coordinator.config_entry
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        location_name = entry.data.get(CONF_LOCATION_NAME, "KNMI")
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=f"KNMI UV {location_name}",
+            name="KNMI UV Index",
             manufacturer=MANUFACTURER,
-            model="UV index forecast",
+            model="Zonkrachtverwachting (Nederland)",
             entry_type=DeviceEntryType.SERVICE,
         )

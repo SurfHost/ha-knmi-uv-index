@@ -1,9 +1,8 @@
-"""Unit tests for the KNMI UV NetCDF parser.
+"""Unit tests for the KNMI UV (zonkracht) XML parser.
 
 The parser and models modules are deliberately free of Home Assistant imports,
 so they are loaded in isolation here (without executing the package __init__,
-which imports Home Assistant). This lets the tests run with only netCDF4 +
-numpy installed.
+which imports Home Assistant). The tests only need the standard library.
 """
 
 from __future__ import annotations
@@ -11,14 +10,13 @@ from __future__ import annotations
 import importlib.util
 import pathlib
 import sys
-import tempfile
 import types
-from datetime import UTC, date, datetime
+from datetime import date
 
-import netCDF4
-import numpy as np
+import pytest
 
 _BASE = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "knmi_uv_index"
+_FIXTURE = pathlib.Path(__file__).resolve().parent / "fixtures" / "zonkrachtverwachting.xml"
 
 
 def _load(modname: str, filename: str) -> types.ModuleType:
@@ -38,112 +36,86 @@ if "knmi_uv_pkg" not in sys.modules:
     _pkg.__path__ = [str(_BASE)]  # type: ignore[attr-defined]
     sys.modules["knmi_uv_pkg"] = _pkg
 
-_models = _load("models", "models.py")
+_load("models", "models.py")
 _parser = _load("parser", "parser.py")
 
-parse_uv_netcdf = _parser.parse_uv_netcdf
+parse_uv_xml = _parser.parse_uv_xml
+select_today = _parser.select_today
+UvParseError = _parser.UvParseError
 
-# Six forecast steps spanning two days (hours since midnight 2026-05-28 UTC).
-_TIME_HOURS = [10, 12, 14, 34, 36, 38]
-# UV values at the target grid cell (lat idx 1, lon idx 1) per time step.
-_UV_AT_CELL = [1.0, 5.0, 3.0, 2.0, 6.0, 4.0]
-
-
-def _build_netcdf(*, in_group: bool = False) -> bytes:
-    """Build a small synthetic KNMI-like UV NetCDF file and return its bytes."""
-    with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
-        tmp_name = tmp.name
-    ds = netCDF4.Dataset(tmp_name, "w", format="NETCDF4")
-    ds.createDimension("time", len(_TIME_HOURS))
-    ds.createDimension("lat", 3)
-    ds.createDimension("lon", 3)
-
-    time_var = ds.createVariable("time", "f8", ("time",))
-    time_var.units = "hours since 2026-05-28 00:00:00"
-    time_var.calendar = "standard"
-    time_var.standard_name = "time"
-    time_var[:] = _TIME_HOURS
-
-    lat_var = ds.createVariable("lat", "f4", ("lat",))
-    lat_var.units = "degrees_north"
-    lat_var.standard_name = "latitude"
-    lat_var[:] = [52.0, 52.5, 53.0]
-
-    lon_var = ds.createVariable("lon", "f4", ("lon",))
-    lon_var.units = "degrees_east"
-    lon_var.standard_name = "longitude"
-    lon_var[:] = [4.0, 4.5, 5.0]
-
-    container = ds.createGroup("PRODUCT") if in_group else ds
-
-    uv = container.createVariable("uv_index", "f4", ("time", "lat", "lon"))
-    uv.long_name = "UV index"
-    data = np.zeros((len(_TIME_HOURS), 3, 3), dtype="f4")
-    for t, value in enumerate(_UV_AT_CELL):
-        data[t, 1, 1] = value
-    uv[:] = data
-
-    uv_clear = container.createVariable("uv_index_clear_sky", "f4", ("time", "lat", "lon"))
-    uv_clear.long_name = "Clear sky UV index"
-    uv_clear[:] = data + 0.5
-
-    ds.close()
-    raw = pathlib.Path(tmp_name).read_bytes()
-    pathlib.Path(tmp_name).unlink()
-    return raw
+_RAW = _FIXTURE.read_bytes()
 
 
-def test_parse_daytime_current_and_daily_max() -> None:
-    raw = _build_netcdf()
-    now = datetime(2026, 5, 28, 12, 5, tzinfo=UTC)
+def test_parse_real_fixture_days() -> None:
+    data = parse_uv_xml(_RAW)
 
-    result = parse_uv_netcdf(raw, latitude=52.4, longitude=4.6, now=now)
+    # The KNMI forecast covers today + 8 days.
+    assert len(data.days) == 9
+    assert data.issued is not None
 
-    # Nearest grid cell is (52.5, 4.5).
-    assert result.grid_latitude == 52.5
-    assert result.grid_longitude == 4.5
-    # Current = value at the 12:00 step (nearest to 12:05).
-    assert result.current == 5.0
-    assert result.current_clear == 5.5
-    assert result.current_time == datetime(2026, 5, 28, 12, 0, tzinfo=UTC)
-    # Two forecast days with their respective maxima.
-    assert len(result.days) == 2
-    assert result.days[0].day == date(2026, 5, 28)
-    assert result.days[0].uv_max == 5.0
-    assert result.days[1].day == date(2026, 5, 29)
-    assert result.days[1].uv_max == 6.0
+    first = data.days[0]
+    assert first.day == date(2026, 5, 28)
+    assert first.valid_id == "dag00"
+    assert first.uv_sunny == 6.0
+    assert first.uv_cloudy == 3.0
+
+    last = data.days[-1]
+    assert last.day == date(2026, 6, 5)
+    assert last.uv_sunny == 5.3
+    assert last.uv_cloudy == 2.6
 
 
-def test_parse_night_returns_zero() -> None:
-    raw = _build_netcdf()
-    now = datetime(2026, 5, 28, 2, 0, tzinfo=UTC)
-
-    result = parse_uv_netcdf(raw, latitude=52.4, longitude=4.6, now=now)
-
-    # 02:00 is more than 45 minutes from the first data point (10:00) -> night.
-    assert result.current == 0.0
-    assert result.current_clear == 0.0
-    # Daily maxima are still available.
-    assert result.days[0].uv_max == 5.0
+def test_days_are_sorted_by_date() -> None:
+    data = parse_uv_xml(_RAW)
+    dates = [day.day for day in data.days]
+    assert dates == sorted(dates)
 
 
-def test_parse_data_inside_group() -> None:
-    raw = _build_netcdf(in_group=True)
-    now = datetime(2026, 5, 28, 14, 2, tzinfo=UTC)
-
-    result = parse_uv_netcdf(raw, latitude=52.4, longitude=4.6, now=now)
-
-    # Variable lives in the PRODUCT group while coordinates are at the root.
-    assert result.current == 3.0
-    assert result.grid_latitude == 52.5
-    assert len(result.days) == 2
+def test_select_today_matches_date() -> None:
+    data = parse_uv_xml(_RAW)
+    tomorrow = select_today(data, date(2026, 5, 29))
+    assert tomorrow is not None
+    assert tomorrow.valid_id == "dag01"
+    assert tomorrow.uv_sunny == 6.4
 
 
-def test_max_days_cap() -> None:
-    raw = _build_netcdf()
-    now = datetime(2026, 5, 28, 12, 0, tzinfo=UTC)
+def test_select_today_falls_back_to_first_day() -> None:
+    data = parse_uv_xml(_RAW)
+    fallback = select_today(data, date(2030, 1, 1))
+    assert fallback is not None
+    assert fallback.day == date(2026, 5, 28)
 
-    result = parse_uv_netcdf(raw, latitude=52.4, longitude=4.6, now=now, max_days=1)
 
-    assert len(result.days) == 1
-    assert result.days[0].day == date(2026, 5, 28)
+def test_missing_cloudy_value_is_none() -> None:
+    xml = b"""<?xml version="1.0"?>
+    <report>
+      <metadata>
+        <report_info><report_dtg_issued>2026-05-28T06:00:00</report_dtg_issued></report_info>
+        <report_valid_periods>
+          <report_valid_period>
+            <valid_id>dag00</valid_id>
+            <valid_start>2026-05-28T00:00:00</valid_start>
+            <valid_descr>vandaag</valid_descr>
+          </report_valid_period>
+        </report_valid_periods>
+      </metadata>
+      <data>
+        <location>
+          <location_id>NL</location_id>
+          <block>
+            <field_id>zonkracht_zonnig</field_id>
+            <valid_id>dag00</valid_id>
+            <field_content>7.0</field_content>
+          </block>
+        </location>
+      </data>
+    </report>"""
+    data = parse_uv_xml(xml)
+    assert len(data.days) == 1
+    assert data.days[0].uv_sunny == 7.0
+    assert data.days[0].uv_cloudy is None
+
+
+def test_invalid_xml_raises() -> None:
+    with pytest.raises(UvParseError):
+        parse_uv_xml(b"<report><not-closed>")

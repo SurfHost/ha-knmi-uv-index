@@ -7,17 +7,11 @@ from typing import Final
 DOMAIN: Final = "knmi_uv_index"
 
 CONF_API_KEY: Final = "api_key"
-CONF_LATITUDE: Final = "latitude"
-CONF_LONGITUDE: Final = "longitude"
-CONF_LOCATION_NAME: Final = "location_name"
-CONF_ZONE: Final = "zone"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 
-DEFAULT_SCAN_INTERVAL: Final = 900
-MIN_SCAN_INTERVAL: Final = 300
-MAX_SCAN_INTERVAL: Final = 21600
-
-DEFAULT_MAX_DAYS: Final = 8
+DEFAULT_SCAN_INTERVAL: Final = 3600
+MIN_SCAN_INTERVAL: Final = 900
+MAX_SCAN_INTERVAL: Final = 86400
 
 KNMI_API_BASE: Final = "https://api.dataplatform.knmi.nl/open-data/v1"
 DATASET_NAME: Final = "uv_index"

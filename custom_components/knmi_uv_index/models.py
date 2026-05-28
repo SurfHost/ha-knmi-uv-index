@@ -11,31 +11,21 @@ from datetime import date, datetime
 
 
 @dataclass(frozen=True, slots=True)
-class UvForecastPoint:
-    """A single UV index forecast point in time."""
-
-    timestamp: datetime
-    uv: float
-    uv_clear: float | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class UvDayMax:
-    """The maximum UV index for a single day."""
+class UvDayForecast:
+    """UV index forecast for a single day (national, the Netherlands)."""
 
     day: date
-    uv_max: float
+    valid_id: str
+    description: str
+    uv_sunny: float | None
+    uv_cloudy: float | None
 
 
 @dataclass(slots=True)
 class UvData:
-    """Container for the parsed UV data at a single location."""
+    """Container for the parsed KNMI UV (zonkracht) forecast."""
 
-    current: float | None = None
-    current_time: datetime | None = None
-    current_clear: float | None = None
-    days: list[UvDayMax] = field(default_factory=list)
-    points: list[UvForecastPoint] = field(default_factory=list)
-    grid_latitude: float | None = None
-    grid_longitude: float | None = None
+    days: list[UvDayForecast] = field(default_factory=list)
+    issued: datetime | None = None
     source_file: str | None = None
+    today: UvDayForecast | None = None

@@ -7,32 +7,23 @@
         "data": {
           "api_key": "API-sleutel"
         }
-      },
-      "location": {
-        "title": "Kies een locatie",
-        "description": "Kies de locatie waarvoor de UV-index wordt getoond. De lijst is gebaseerd op je Home Assistant-zones.",
-        "data": {
-          "zone": "Locatie"
-        }
       }
     },
     "error": {
       "cannot_connect": "Kan geen verbinding maken met het KNMI Data Platform",
       "invalid_auth": "Ongeldige API-sleutel",
-      "no_zones": "Geen zones gevonden en geen Home-locatie ingesteld",
       "unknown": "Onverwachte fout"
     },
     "abort": {
-      "already_configured": "Deze locatie is al geconfigureerd"
+      "single_instance_allowed": "Al geconfigureerd. Er is maar één configuratie mogelijk."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "KNMI UV-index opties",
-        "description": "Wijzig hoe vaak de data wordt ververst en welke locatie wordt gebruikt.",
+        "description": "Wijzig hoe vaak de verwachting wordt ververst.",
         "data": {
-          "zone": "Locatie",
           "scan_interval": "Verversingsinterval (seconden)"
         }
       }

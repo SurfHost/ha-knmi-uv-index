@@ -15,7 +15,7 @@ from .api import KnmiUvClient
 from .const import DOMAIN
 from .errors import KnmiApiError, KnmiAuthError, KnmiConnectionError
 from .models import UvData
-from .parser import UvParseError, parse_uv_netcdf
+from .parser import UvParseError, parse_uv_xml, select_today
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,19 +23,11 @@ type KnmiUvConfigEntry = ConfigEntry[KnmiUvCoordinator]
 
 
 class KnmiUvCoordinator(DataUpdateCoordinator[UvData]):
-    """Coordinator that downloads and parses KNMI UV index data."""
+    """Coordinator that downloads and parses the KNMI UV (zonkracht) forecast."""
 
     config_entry: KnmiUvConfigEntry
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: KnmiUvClient,
-        latitude: float,
-        longitude: float,
-        scan_interval: int,
-        max_days: int,
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, client: KnmiUvClient, scan_interval: int) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
@@ -44,14 +36,11 @@ class KnmiUvCoordinator(DataUpdateCoordinator[UvData]):
             update_interval=timedelta(seconds=scan_interval),
         )
         self.client = client
-        self.latitude = latitude
-        self.longitude = longitude
-        self.max_days = max_days
         self._raw: bytes | None = None
         self._raw_filename: str | None = None
 
     async def _async_update_data(self) -> UvData:
-        """Fetch the latest file (if new) and parse the UV index for the location."""
+        """Fetch the latest forecast file (if new) and parse it."""
         try:
             filename = await self.client.async_get_latest_filename()
             if filename != self._raw_filename or self._raw is None:
@@ -64,18 +53,11 @@ class KnmiUvCoordinator(DataUpdateCoordinator[UvData]):
         except (KnmiConnectionError, KnmiApiError) as err:
             raise UpdateFailed(str(err)) from err
 
-        now = dt_util.utcnow()
         try:
-            data = await self.hass.async_add_executor_job(
-                parse_uv_netcdf,
-                self._raw,
-                self.latitude,
-                self.longitude,
-                now,
-                self.max_days,
-            )
+            data = parse_uv_xml(self._raw)
         except UvParseError as err:
             raise UpdateFailed(f"Could not parse KNMI UV data: {err}") from err
 
         data.source_file = self._raw_filename
+        data.today = select_today(data, dt_util.now().date())
         return data
