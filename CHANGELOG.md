@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2] - 2026-05-28
+
+### Changed
+- Forecast day sensors now show a readable name: "Today", "Tomorrow", and the weekday + date (e.g. "Saturday 30 May") for the following days, updated automatically on each poll.
+- Added `weekday` to the per-day sensors and to the `forecast` attribute, so a graph card can plot the multi-day forecast by absolute date/weekday (avoids mixing forecast days in a single sensor's history).
+- Forecast day sensors use a stable entity id (`sensor.knmi_uv_index_day_N`).
+
 ## [0.1.1] - 2026-05-28
 
 ### Changed
