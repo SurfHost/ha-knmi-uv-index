@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KNMI UV Index",
+        "description": "Enter your KNMI Data Platform API key. Request a free key at https://developer.dataplatform.knmi.nl/register (choose the Open Data API).",
+        "data": {
+          "api_key": "API key"
+        }
+      },
+      "location": {
+        "title": "Choose a location",
+        "description": "Pick the location to report the UV index for. The list is based on your Home Assistant zones.",
+        "data": {
+          "zone": "Location"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the KNMI Data Platform",
+      "invalid_auth": "Invalid API key",
+      "no_zones": "No zones found and no Home location is configured",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This location is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "KNMI UV Index options",
+        "description": "Change how often the data is refreshed and which location is used.",
+        "data": {
+          "zone": "Location",
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  }
+}

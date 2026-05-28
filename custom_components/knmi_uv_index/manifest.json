@@ -1,0 +1,13 @@
+{
+  "domain": "knmi_uv_index",
+  "name": "KNMI UV Index",
+  "codeowners": ["@SurfHost"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/SurfHost/ha-knmi-uv-index",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/SurfHost/ha-knmi-uv-index/issues",
+  "requirements": ["netCDF4==1.7.4"],
+  "version": "0.1.0"
+}
