@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KNMI UV-index",
-        "description": "Vul je KNMI Data Platform API-sleutel in. Vraag gratis een sleutel aan op https://developer.dataplatform.knmi.nl/register (kies de Open Data API).",
+        "description": "Vul je KNMI Data Platform API-sleutel in. Vraag gratis een sleutel aan op het [KNMI developer portal]({register_url}) (kies de Open Data API).",
         "data": {
           "api_key": "API-sleutel"
         }

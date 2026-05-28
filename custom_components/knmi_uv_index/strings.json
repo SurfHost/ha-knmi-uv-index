@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "KNMI UV Index",
-        "description": "Enter your KNMI Data Platform API key. Request a free key at https://developer.dataplatform.knmi.nl/register (choose the Open Data API).",
+        "description": "Enter your KNMI Data Platform API key. Request a free key at the [KNMI developer portal]({register_url}) (choose the Open Data API).",
         "data": {
           "api_key": "API key"
         }

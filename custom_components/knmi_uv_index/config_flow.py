@@ -31,6 +31,7 @@ from .const import (
     DOMAIN,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
+    REGISTER_URL,
 )
 from .coordinator import KnmiUvConfigEntry
 from .errors import KnmiAuthError, KnmiConnectionError
@@ -103,6 +104,7 @@ class KnmiUvConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema({vol.Required(CONF_API_KEY): _API_KEY_SELECTOR}),
             errors=errors,
+            description_placeholders={"register_url": REGISTER_URL},
         )
 
     async def async_step_location(
