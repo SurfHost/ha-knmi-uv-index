@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1] - 2026-07-25
+
+### Added
+- CI now runs the test suite. The eight parser tests have existed since 0.1.0 and the workflow never executed them, because it validated HACS and hassfest metadata only. It also now runs `ruff check`, `ruff format --check` and strict `mypy`.
+- A release gate that fails a tag push when the tag disagrees with the version in `manifest.json` or `pyproject.toml`.
+
+### Fixed
+- The test suite could not run under `uv run pytest` at all. `pytest-homeassistant-custom-component` registers itself as the `homeassistant` plugin and injects autouse async fixtures into every test, which made pytest-asyncio error out on these deliberately Home Assistant free sync tests, and on Windows its import of `homeassistant.runner` failed on the missing `fcntl` module. The plugin is now disabled for this suite.
+- Two small typing corrections needed for strict `mypy`, in code the tests already cover: the per-day sensor factory uses named closures instead of lambdas carrying a default argument, and a stale `type: ignore` was removed from the test helper.
+
 ## [0.2.0] - 2026-05-28
 
 ### Added
