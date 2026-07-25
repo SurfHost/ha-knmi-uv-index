@@ -33,7 +33,9 @@ def _load(modname: str, filename: str) -> types.ModuleType:
 
 if "knmi_uv_pkg" not in sys.modules:
     _pkg = types.ModuleType("knmi_uv_pkg")
-    _pkg.__path__ = [str(_BASE)]  # type: ignore[attr-defined]
+    # No type: ignore here on purpose. Current typeshed declares ModuleType.__path__,
+    # so an ignore would be flagged as unused by mypy's strict warn_unused_ignores.
+    _pkg.__path__ = [str(_BASE)]
     sys.modules["knmi_uv_pkg"] = _pkg
 
 _load("models", "models.py")

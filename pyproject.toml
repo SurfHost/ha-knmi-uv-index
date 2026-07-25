@@ -2,7 +2,10 @@
 name = "ha-knmi-uv-index"
 version = "0.2.0"
 description = "KNMI UV index for Home Assistant using the KNMI Data Platform Open Data API"
-requires-python = ">=3.13"
+# 3.14.2 is not a preference, it is forced: the homeassistant floor below (2026.4.0, the
+# same floor hacs.json declares) itself requires Python >= 3.14.2, so the old ">=3.13"
+# made the dependency set unsatisfiable and "uv sync" refused to resolve at all.
+requires-python = ">=3.14.2"
 license = "MIT"
 
 dependencies = [
@@ -26,7 +29,15 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv]
+# HA custom component > nothing to build/install as a wheel, so do not let uv try.
+package = false
+
 [tool.ruff]
+# Deliberately left at py313 even though requires-python is now 3.14.2. At py314 the
+# formatter starts rewriting "except (TypeError, ValueError):" into the unparenthesised
+# PEP 758 form, which is a churny 3.14-only cosmetic change to parser.py we do not want.
+# Bumping this is a separate decision, not a side effect of fixing the dependency floor.
 target-version = "py313"
 line-length = 100
 
@@ -44,8 +55,11 @@ select = [
 ]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+# Named here so CI and a bare local "mypy" check the same set. Nothing is excluded:
+# both the shipped component and the tests pass strict mode as of 0.2.0.
+files = ["custom_components", "tests"]

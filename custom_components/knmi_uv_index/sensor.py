@@ -15,7 +15,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import UV_INDEX
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.typing import StateType, UndefinedType
 
 from .const import DOMAIN
 from .coordinator import KnmiUvConfigEntry, KnmiUvCoordinator
@@ -147,6 +147,15 @@ def _day_attrs(data: UvData, index: int) -> dict[str, Any]:
 
 
 def _make_day_sensor(index: int) -> KnmiUvSensorDescription:
+    # Named closures rather than lambdas with a default argument: the index is already
+    # captured per call of this factory, and mypy cannot infer the type of a lambda that
+    # carries an extra default parameter (it no longer matches Callable[[UvData], ...]).
+    def value_fn(data: UvData) -> StateType:
+        return data.days[index].uv_sunny if index < len(data.days) else None
+
+    def attrs_fn(data: UvData) -> dict[str, Any]:
+        return _day_attrs(data, index)
+
     return KnmiUvSensorDescription(
         key=f"uv_day_{index}",
         name=f"Day {index}",
@@ -154,8 +163,8 @@ def _make_day_sensor(index: int) -> KnmiUvSensorDescription:
         native_unit_of_measurement=UV_INDEX,
         suggested_display_precision=1,
         day_index=index,
-        value_fn=lambda data, n=index: data.days[n].uv_sunny if n < len(data.days) else None,
-        attrs_fn=lambda data, n=index: _day_attrs(data, n),
+        value_fn=value_fn,
+        attrs_fn=attrs_fn,
     )
 
 
@@ -190,8 +199,13 @@ class KnmiUvSensor(KnmiUvEntity, SensorEntity):
             self.entity_id = f"sensor.{DOMAIN}_day_{description.day_index}"
 
     @property
-    def name(self) -> str | None:
-        """Return a dynamic, readable name for forecast day sensors."""
+    def name(self) -> str | UndefinedType | None:
+        """Return a dynamic, readable name for forecast day sensors.
+
+        The return type mirrors Entity.name, which may hand back UNDEFINED to mean
+        "no name decided yet"; that is distinct from None and must be passed through
+        untouched so Home Assistant can still fall back to the entity description.
+        """
         description = self.entity_description
         if description.day_index is not None:
             data = self.coordinator.data
