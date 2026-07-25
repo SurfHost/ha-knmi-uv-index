@@ -54,6 +54,18 @@ select = [
     "RUF",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# pytest-homeassistant-custom-component registers itself as the "homeassistant"
+# plugin and injects autouse async fixtures into every test it sees. The tests here
+# are deliberately Home Assistant free: parser.py and models.py are loaded
+# standalone and nothing under tests/ imports homeassistant. Leaving the plugin
+# enabled breaks them two ways: pytest-asyncio escalates "sync test requested an
+# async autouse fixture" to an error, and on Windows the plugin's import of
+# homeassistant.runner fails outright on the missing fcntl module. Re-enable this
+# when config flow or coordinator tests actually need the HA fixtures.
+addopts = "-p no:homeassistant"
+
 [tool.mypy]
 python_version = "3.14"
 strict = true
