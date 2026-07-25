@@ -17,13 +17,13 @@ KNMI publishes a national UV forecast (`zonkrachtverwachting`) for today and the
 
 ## Data sources
 
-- **KNMI Data Platform** (`uv-index`) — the official national daily UV forecast for the Netherlands (`zonkrachtverwachting`). Requires a free API key.
-- **[Open-Meteo](https://open-meteo.com/)** air-quality API — the live, hourly, location-specific UV index for your Home Assistant home location. Free, **no API key**, CAMS model data. (No ground-measured UV is published as data for the Netherlands, so this model value is used for the live reading.)
+- **KNMI Data Platform** (`uv-index`) > the official national daily UV forecast for the Netherlands (`zonkrachtverwachting`). Requires a free API key.
+- **[Open-Meteo](https://open-meteo.com/)** air-quality API > the live, hourly, location-specific UV index for your Home Assistant home location. Free, **no API key**, CAMS model data. (No ground-measured UV is published as data for the Netherlands, so this model value is used for the live reading.)
 
 ## Requirements
 
 - Home Assistant 2026.4 or newer
-- A free KNMI Data Platform API key — **[request one here](https://developer.dataplatform.knmi.nl/register/)** (choose the *Open Data API*).
+- A free KNMI Data Platform API key > **[request one here](https://developer.dataplatform.knmi.nl/register/)** (choose the *Open Data API*).
 
 ## Installation
 
@@ -95,7 +95,7 @@ series:
 
 ## Data source
 
-UV index data is provided by the [KNMI Data Platform](https://dataplatform.knmi.nl/dataset/access/uv-index-1-0) (`uv-index`, version 1.0) — the national `zonkrachtverwachting` published by the Royal Netherlands Meteorological Institute (KNMI). An API key is required and can be requested for free at the [KNMI developer portal](https://developer.dataplatform.knmi.nl/register/).
+UV index data is provided by the [KNMI Data Platform](https://dataplatform.knmi.nl/dataset/access/uv-index-1-0) (`uv-index`, version 1.0) > the national `zonkrachtverwachting` published by the Royal Netherlands Meteorological Institute (KNMI). An API key is required and can be requested for free at the [KNMI developer portal](https://developer.dataplatform.knmi.nl/register/).
 
 ## License
 
