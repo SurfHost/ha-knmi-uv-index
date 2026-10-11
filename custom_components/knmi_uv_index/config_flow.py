@@ -5,11 +5,19 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+
+# Home Assistant replaced voluptuous with probatio in 2026.9 and types async_show_form
+# against probatio.Schema since 2026.10. At runtime HA aliases "voluptuous" to probatio,
+# but mypy sees the real voluptuous package and rejects the schema. Import probatio
+# directly and fall back for the 2026.4-2026.8 releases hacs.json still allows.
+try:
+    import probatio as vol
+except ImportError:
+    import voluptuous as vol  # type: ignore[no-redef]
 
 from .api import KnmiUvClient
 from .const import (
