@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.3] - 2026-11-24
+
+### Changed
+- **Installation through the Home Assistant Marketplace.** Since Home Assistant 2026.11, HACS is built into Home Assistant as the Marketplace. The README now has a Marketplace badge and install steps. An existing HACS installation moves over by itself and keeps receiving updates.
+
 ## [0.2.2] - 2026-10-11
 
 ### Fixed

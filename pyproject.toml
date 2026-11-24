@@ -1,6 +1,6 @@
 [project]
 name = "ha-knmi-uv-index"
-version = "0.2.2"
+version = "0.2.3"
 description = "KNMI UV index for Home Assistant using the KNMI Data Platform Open Data API"
 # 3.14.2 is not a preference, it is forced: the homeassistant floor below (2026.4.0, the
 # same floor hacs.json declares) itself requires Python >= 3.14.2, so the old ">=3.13"
